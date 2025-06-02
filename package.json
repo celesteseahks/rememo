@@ -1,0 +1,40 @@
+{
+  "name": "rememo-node",
+  "version": "0.1.0",
+  "description": "Rememo Web App built on fastify to handle OCR and AI image generation.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@fastify/formbody": "^7.4.0",
+    "@fastify/multipart": "^7.5.0",
+    "@fastify/static": "^6.10.2",
+    "@fastify/view": "^8.0.0",
+    "@google-cloud/aiplatform": "^4.2.0",
+    "@google-cloud/storage": "^7.15.0",
+    "@google-cloud/vision": "^2.4.2",
+    "airtable": "^0.12.2",
+    "fastify": "^4.21.0",
+    "form-data": "^4.0.1",
+    "google-auth-library": "^9.15.1",
+    "handlebars": "^4.7.8",
+    "node-fetch": "^2.6.7",
+    "sqlite3": "^5.1.7",
+    "ua-parser-js": "^2.0.0"
+  },
+  "engines": {
+    "node": "14.x"
+  },
+  "repository": {
+    "url": "https://glitch.com/edit/#!/rememo-node"
+  },
+  "license": "MIT",
+  "keywords": [
+    "node",
+    "glitch",
+    "rememo",
+    "ocr",
+    "ai"
+  ]
+}
