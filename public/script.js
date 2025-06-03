@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Update the greeting message
   usernameInput.value = username;
   greetingMessage.textContent = `${timeOfDayGreeting}, ${username}!`;
-  
+
   let lastImageGenerationId = null;
   let lastInputData = null;
 
@@ -198,10 +198,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function pollForImage(imageGenerationId) {
     const interval = setInterval(() => {
       fetch(`/api/image-status/${imageGenerationId}`)
-        .then((response) => {
-          if (!response.ok) throw new Error(`Status: ${response.status}`);
-          return response.json();
-        })
+        .then((response) => response.json())
         .then((data) => {
           if (data.status === "completed") {
             clearInterval(interval);
@@ -209,20 +206,34 @@ document.addEventListener("DOMContentLoaded", function () {
             imageSection.classList.remove("hidden");
             generatedImage.src = data.generatedImageUrl;
 
-            // Show the newImageButton and retryButton
-            newImageButton.classList.remove("hidden");
-            retryButton.classList.remove("hidden");
+            // Handle guiding questions
+            const guidingQuestions = document.getElementById("guidingQuestions");
+            const questionsList = document.getElementById("questionsList");
+
+            if (data.guidingQuestions && data.guidingQuestions.length > 0) {
+              console.log("Displaying guiding questions:", data.guidingQuestions);
+              questionsList.innerHTML = data.guidingQuestions
+                .map(question => `<li>${question}</li>`)
+                .join('');
+              guidingQuestions.style.display = "block";
+            } else {
+              console.log("No guiding questions to display");
+              guidingQuestions.style.display = "none";
+            }
           } else if (data.status === "failed") {
             clearInterval(interval);
-            throw new Error("Image generation failed.");
+            loadingPage.classList.add("hidden");
+            inputSection.classList.remove("hidden");
+            alert("Image generation failed. Please try again.");
           }
         })
-        .catch((err) => {
+        .catch((error) => {
+          console.error("Error polling for image status:", error);
           clearInterval(interval);
           loadingPage.classList.add("hidden");
           inputSection.classList.remove("hidden");
-          alert(`Error: ${err.message}`);
+          alert("Error checking image status. Please try again.");
         });
-    }, 2000);
+    }, 1000); // Poll every second
   }
 });

@@ -9,14 +9,18 @@ const filterPromptData = require("./src/prompts/filter");
 const createPrompt = require("./src/prompts/createPrompt");
 const createTextPrompt = require("./src/prompts/createTextPrompt");
 const processPromptAndGenerateImage = require("./src/sdxl");
+const { generateGuidingQuestions } = require('./src/gemini');
 
 let userAgentInfo;
 
 // Set up Google Cloud Vision client
 const client = new vision.ImageAnnotatorClient();
 
-// Initialize Google Cloud Storage client
-const storage = new Storage();
+// Initialize Google Cloud Storage client with default credentials
+const storage = new Storage({
+  projectId: process.env.GCP_PROJECT_ID,
+  credentials: undefined // This will make it use the default credentials
+});
 const bucketName = process.env.GCS_BUCKET_NAME;
 
 async function uploadToGCS(fileBuffer, destinationPath) {
@@ -197,7 +201,7 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
 
     let fileBuffer = null;
     let freeText = "";
-    let username = "Guest"; // Default value if username is not provided
+    let username = "Guest";
 
     for await (const part of parts) {
       if (part.file) {
@@ -205,7 +209,7 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
       } else if (part.fieldname === "freeText") {
         freeText = part.value || "";
       } else if (part.fieldname === "username") {
-        username = part.value || "Guest"; // Capture username from the request
+        username = part.value || "Guest";
       }
     }
 
@@ -220,12 +224,12 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
 
     const generationId = Date.now().toString();
     imageStatusMap.set(generationId, { status: "processing", generatedImageUrl: null });
-    console.log("Initial imageStatusMap:", Array.from(imageStatusMap.entries()));
 
     let uploadedImageUrl = null;
     let ocrText = "";
     let filteredPromptData = {};
     let prompt = "";
+    let guidingQuestions = [];
 
     // Handle image upload and OCR
     if (fileBuffer) {
@@ -235,13 +239,19 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
       filteredPromptData = ocrResult.filteredPromptData;
       prompt = ocrResult.prompt;
     } else {
-      // Handle free text only
       const ocrResult = await handleOCR(null, freeText, null);
       filteredPromptData = ocrResult.filteredPromptData;
       prompt = ocrResult.prompt;
     }
 
-    console.log("Prompt generated:", prompt);
+    // Generate guiding questions using Gemini
+    try {
+      guidingQuestions = await generateGuidingQuestions(prompt, uploadedImageUrl);
+      console.log("Generated guiding questions:", guidingQuestions);
+    } catch (error) {
+      console.error("Error generating guiding questions:", error);
+      guidingQuestions = []; // Set empty array if generation fails
+    }
 
     // Generate the image
     processPromptAndGenerateImage(prompt, engine)
@@ -252,7 +262,6 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
             const generatedImageBuffer = Buffer.from(imageResponse.image_url.split(",")[1], "base64");
             generatedImageUrl = await uploadToGCS(generatedImageBuffer, `generated/${generationId}.png`);
           } else {
-            // Handle Replicate (flux1): Fetch the image from the URL and upload to GCS
             const response = await fetch(imageResponse.image_url);
             if (!response.ok) {
               throw new Error(`Failed to fetch image from URL: ${imageResponse.image_url}`);
@@ -263,10 +272,10 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
 
           await logToAirtable({
             generationId,
-            username: username,
+            username,
             uploadedImageUrl,
             freeText,
-            ocrText: ocrText,
+            ocrText,
             generatedImageUrl,
             input: Object.values(filteredPromptData).join(", "),
             prompt,
@@ -275,21 +284,33 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
             userAgentInfo,
           });
 
-          imageStatusMap.set(generationId, { status: "completed", generatedImageUrl });
-          console.log("Updated imageStatusMap after completion:", Array.from(imageStatusMap.entries()));
+          imageStatusMap.set(generationId, {
+            status: "completed",
+            generatedImageUrl,
+            guidingQuestions
+          });
         } else {
-          imageStatusMap.set(generationId, { status: "failed", generatedImageUrl: null });
+          imageStatusMap.set(generationId, {
+            status: "failed",
+            generatedImageUrl: null,
+            guidingQuestions
+          });
         }
       })
       .catch((err) => {
         console.error(`Image generation failed for ID ${generationId}:`, err);
-        imageStatusMap.set(generationId, { status: "failed", generatedImageUrl: null });
+        imageStatusMap.set(generationId, {
+          status: "failed",
+          generatedImageUrl: null,
+          guidingQuestions
+        });
       });
 
     reply.send({
       filteredPrompt: Object.values(filteredPromptData).join(", "),
       imageGenerationId: generationId,
       uploadedImageUrl,
+      guidingQuestions
     });
   } catch (err) {
     console.error("Error during OCR or image generation:", err);
@@ -299,21 +320,20 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
 
 
 
-// API to check the status of image generation
-fastify.get("/api/image-status/:id", async (req, reply) => {
-  const { id } = req.params;
-  console.log("Checking image status for ID:", id);
-  console.log("Current imageStatusMap:", Array.from(imageStatusMap.entries()));
+// API to check image generation status
+fastify.get("/api/image-status/:generationId", async (req, reply) => {
+  const { generationId } = req.params;
+  const status = imageStatusMap.get(generationId);
 
-  if (!imageStatusMap.has(id)) {
-    console.log("ID not found in imageStatusMap:", id);
-    return reply.status(404).send({ message: "Image generation ID not found" });
+  if (!status) {
+    return reply.status(404).send({ error: "Generation ID not found" });
   }
 
-  const statusData = imageStatusMap.get(id);
-  console.log("Found status data for ID:", id, statusData);
-
-  reply.send(statusData);
+  reply.send({
+    status: status.status,
+    generatedImageUrl: status.generatedImageUrl,
+    guidingQuestions: status.guidingQuestions || []
+  });
 });
 
 

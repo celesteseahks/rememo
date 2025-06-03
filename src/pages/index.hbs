@@ -87,6 +87,12 @@
             </label>
           </div>
           <img id="generatedImage" style="width: 100vw; align: center" alt="Generated image" />
+
+          <!-- Guiding Questions Section -->
+          <div class="guiding-questions" id="guidingQuestions" style="display: none;">
+            <h3>Guiding Questions for Reminiscence</h3>
+            <ul id="questionsList"></ul>
+          </div>
         </div>
 
         <div class="buttons">
@@ -97,12 +103,116 @@
 
         <div data-tf-live="01JJBR431WT7NTQ8J71AZPHXTT"></div>
         <script src="//embed.typeform.com/next/embed.js"></script>
+      </div>
 
+      <div class="result-container" id="resultContainer" style="display: none;">
+        <div class="result-content">
+          <div class="image-container">
+            <img id="generatedImage" src="" alt="Generated image" style="display: none;">
+            <div id="loadingSpinner" class="loading-spinner"></div>
+          </div>
+          <div class="guiding-questions" id="guidingQuestions" style="display: none;">
+            <h3>Guiding questions</h3>
+            <ul id="questionsList"></ul>
+          </div>
+        </div>
       </div>
 
     </div>
   </div>
   <script src="/script.js"></script>
+  <style>
+    .guiding-questions {
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .guiding-questions h3 {
+      color: #2c3e50;
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+    }
+
+    .guiding-questions ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .guiding-questions li {
+      margin-bottom: 1rem;
+      padding: 0.8rem;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s ease;
+    }
+  </style>
+  <script>
+    // Function to check image generation status
+    async function checkImageStatus(generationId) {
+      try {
+        const response = await fetch(`/api/image-status/${generationId}`);
+        const data = await response.json();
+
+        if (data.status === "completed") {
+          const generatedImage = document.getElementById("generatedImage");
+          const loadingSpinner = document.getElementById("loadingSpinner");
+          const guidingQuestions = document.getElementById("guidingQuestions");
+          const questionsList = document.getElementById("questionsList");
+
+          // Update image
+          generatedImage.src = data.generatedImageUrl;
+          generatedImage.style.display = "block";
+          if (loadingSpinner) {
+            loadingSpinner.style.display = "none";
+          }
+
+          // Update guiding questions
+          if (data.guidingQuestions && data.guidingQuestions.length > 0) {
+            console.log("Received guiding questions:", data.guidingQuestions);
+            questionsList.innerHTML = data.guidingQuestions
+              .map(question => `<li>${question}</li>`)
+              .join('');
+            guidingQuestions.style.display = "block";
+          } else {
+            console.log("No guiding questions received");
+          }
+
+          return true;
+        } else if (data.status === "failed") {
+          alert("Image generation failed. Please try again.");
+          return true;
+        }
+
+        return false;
+      } catch (error) {
+        console.error("Error checking image status:", error);
+        return false;
+      }
+    }
+
+    // Function to start polling for status
+    function startStatusPolling(generationId) {
+      const pollInterval = setInterval(async () => {
+        const isComplete = await checkImageStatus(generationId);
+        if (isComplete) {
+          clearInterval(pollInterval);
+        }
+      }, 1000); // Poll every second
+    }
+
+    // Add event listener for the generate button
+    document.getElementById('generateButton').addEventListener('click', async () => {
+      // Your existing generate button code...
+      // After getting the generationId, call:
+      // startStatusPolling(generationId);
+    });
+  </script>
 </body>
 
 </html>
