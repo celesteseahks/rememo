@@ -1,44 +1,51 @@
-# Hello Node!
+# Rememo
 
-This project includes a Node.js server script and a web page that connects to it. The front-end page presents a form the visitor can use to submit a color name, sending the submitted value to the back-end API running on the server. The server returns info to the page that allows it to update the display with the chosen color. 🎨
+A web application for reminiscence therapy that visualizes memories using AI image generation.
 
-[Node.js](https://nodejs.org/en/about/) is a popular runtime that lets you run server-side JavaScript. This project uses the [Fastify](https://www.fastify.io/) framework and explores basic templating with [Handlebars](https://handlebarsjs.com/).
+## Features
 
-_Last updated: 14 August 2023_
+- Upload photos of memory cards or type in memory details
+- OCR (Optical Character Recognition) to read text from uploaded images
+- Multiple AI image generation engines:
+  - Stable Diffusion XL (fast, general purpose)
+  - Flux.1 (slower, trained on local context)
+  - Imagen 4 (experimental)
+- Save or print generated images
+- Mobile-friendly interface
 
-## Prerequisites
+## Tech Stack
 
-You'll get best use out of this project if you're familiar with basic JavaScript. If you've written JavaScript for client-side web pages this is a little different because it uses server-side JS, but the syntax is the same!
+- Node.js with Fastify framework
+- Handlebars templating
+- Google Cloud Vision API for OCR
+- Google Cloud Storage for image storage
+- Airtable for logging and analytics
+- Docker support
 
-## What's in this project?
+## Setup
 
-← `README.md`: That’s this file, where you can tell people what your cool website does and how you built it.
+1. Clone the repository
+2. Create a `.env` file with required credentials:
+```
+AIRTABLE_PERSONAL_ACCESS_TOKEN=your_token
+GCS_BUCKET_NAME=your_bucket
+GOOGLE_APPLICATION_CREDENTIALS=path_to_credentials.json
+```
+3. Install dependencies:
+```bash
+npm install
+```
+4. Run the development server:
+```bash
+npm start
+```
 
-← `public/style.css`: The styling rules for the pages in your site.
+Or using Docker:
+```bash
+docker build -t rememo .
+docker run -p 3000:3000 --env-file .env rememo
+```
 
-← `server.js`: The **Node.js** server script for your new site. The JavaScript defines the endpoints in the site back-end, one to return the homepage and one to update with the submitted color. Each one sends data to a Handlebars template which builds these parameter values into the web page the visitor sees.
+## License
 
-← `package.json`: The NPM packages for your project's dependencies.
-
-← `src/`: This folder holds the site template along with some basic data files.
-
-← `src/pages/index.hbs`: This is the main page template for your site. The template receives parameters from the server script, which it includes in the page HTML. The page sends the user submitted color value in the body of a request, or as a query parameter to choose a random color.
-
-← `src/colors.json`: A collection of CSS color names. We use this in the server script to pick a random color, and to match searches against color names.
-
-← `src/seo.json`: When you're ready to share your new site or add a custom domain, change SEO/meta settings in here.
-
-## Try this next 🏗️
-
-Take a look in `TODO.md` for next steps you can try out in your new site!
-
-___Want a minimal version of this project to build your own Node.js app? Check out [Blank Node](https://glitch.com/edit/#!/remix/glitch-blank-node)!___
-
-![Glitch](https://cdn.glitch.com/a9975ea6-8949-4bab-addb-8a95021dc2da%2FLogo_Color.svg?v=1602781328576)
-
-## You built this with Glitch!
-
-[Glitch](https://glitch.com) is a friendly community where millions of people come together to build web apps and websites.
-
-- Need more help? [Check out our Help Center](https://help.glitch.com/) for answers to any common questions.
-- Ready to make it official? [Become a paid Glitch member](https://glitch.com/pricing) to boost your app with private sharing, more storage and memory, domains and more.
+MIT License - See LICENSE file for details 
