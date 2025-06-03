@@ -1,103 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="https://glitch.com/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Rememo</title>
-    <link rel="stylesheet" href="/style.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  </head>
 
-  <body>
-    <h1 class="title">Rememo</h1>
-    <div class="wrapper">
-      <div role="main">
-        
-        <!-- Input Section -->
-        <div id="inputSection">
-          <input type="hidden" id="usernameInput" value="Guest" />
-          <div id="greetingContainer">
-            <p id="greetingMessage" class="greeting-message"></p>
-          </div>
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rememo</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
 
-          <div>
-            <p class="form-question">Take a photo of chosen cards</p>
-            <label class="camera-button" id="cameraButton">
-              <i class="fas fa-camera"></i> Take photo
-              <input type="file" id="imageInput" accept="image/*" capture="camera" style="display: none;" />
+<body>
+  <h1 class="title">Rememo</h1>
+  <div class="wrapper">
+    <div role="main">
+
+      <!-- Input Section -->
+      <div id="inputSection">
+        <input type="hidden" id="usernameInput" value="Guest" />
+        <div id="greetingContainer">
+          <p id="greetingMessage" class="greeting-message"></p>
+        </div>
+
+        <div>
+          <p class="form-question">Take a photo of chosen cards</p>
+          <label class="camera-button" id="cameraButton">
+            <i class="fas fa-camera"></i> Take photo
+            <input type="file" id="imageInput" accept="image/*" capture="camera" style="display: none;" />
+          </label>
+        </div>
+
+        <div>
+          <p class="form-question">Or type in optional details</p>
+          <textarea id="freeText" placeholder="e.g. specific locations, events, people"></textarea>
+        </div>
+
+        <div>
+          <p class="form-question">Select AI engine</p>
+          <div class="radio-group">
+            <label>
+              <input type="radio" id="sdxl" name="engine" value="sdxl" checked />
+              Stable Diffusion XL
+            </label>
+            <label>
+              <input type="radio" id="flux1" name="engine" value="flux1" />
+              Flux.1 (with local context)
+            </label>
+            <label>
+              <input type="radio" id="imagen4" name="engine" value="imagen4" />
+              Imagen 4
             </label>
           </div>
-          
-          <div>
-            <p class="form-question">Or type in optional details</p>
-            <textarea id="freeText" placeholder="e.g. specific locations, events, people"></textarea>
-          </div>
-          
-          <div>
-            <p class="form-question">Select AI engine</p>
-            <div class="radio-group">
-              <label>
-                <input type="radio" id="sdxl" name="engine" value="sdxl" checked />
-                Stable Diffusion XL
-              </label>
-              <label>
-                <input type="radio" id="flux1" name="engine" value="flux1" />
-                Flux.1 (with local context)
-              </label>
-              <label>
-                <input type="radio" id="imagen4" name="engine" value="imagen4" />
-                Imagen 4
-              </label>
-            </div>
-          </div>
-          
-          <div class="buttons">
-            <button class="generate-button" id="generateButton">Generate!</button>
-            <a href="/how-to-use" class="info-button">How to use?</a>
-          </div>
-          
-          <a href="https://jurum7vbo6p.typeform.com/to/B7eOQy69" class="typeform-link" target="_blank">We want your feedback!</a>
-          
-        </div>
-        
-        <!-- Loading Page -->
-        <div id="loadingPage" class="hidden">
-          <div>
-            <p class="form-question">Hold up, I'm picturing a scene of...</p>
-            <p id="ocrResult"></p>
-          </div>
         </div>
 
-        <!-- Display for Generated Image -->
-        <div id="imageSection" class="hidden">
-          <div>
-            <p class="form-question">What do you think of this image?</p>
-            <p>If you'd like to keep or share this image, you can save it to your device or print it out for later use.</p>
-            <p class="smalltext"> Tip: Long press the image to Save or Share... and print with Instax Link WIDE app. </p>
-            <div class="buttons-icons">
-              <label class="save-button" id="saveButton">
-                <i class="fa-solid fa-download"></i> Save
-              </label>
-              <label class="print-button" id="printButton">
-                <i class="fa-solid fa-print"></i> Print
-              </label>
-            </div>
-            <img id="generatedImage" style="width: 100vw; align: center" alt="Generated image"/>
-          </div>
-                    
-          <div class="buttons">
-            <button class="new-image-button" id="newImageButton">Start over</button>
-            <button class="retry-button" id="retryButton">Re-generate</button>
-            <a href="/how-to-use" class="info-button">How to use?</a>
-          </div> 
-          
-          <div data-tf-live="01JJBR431WT7NTQ8J71AZPHXTT"></div><script src="//embed.typeform.com/next/embed.js"></script>
-          
+        <div class="buttons">
+          <button class="generate-button" id="generateButton">Generate!</button>
+          <a href="/how-to-use" class="info-button">How to use?</a>
         </div>
-        
+
+        <a href="https://jurum7vbo6p.typeform.com/to/B7eOQy69" class="typeform-link" target="_blank">We want your
+          feedback!</a>
+
       </div>
+
+      <!-- Loading Page -->
+      <div id="loadingPage" class="hidden">
+        <div>
+          <p class="form-question">Hold up, I'm picturing a scene of...</p>
+          <p id="ocrResult"></p>
+        </div>
+      </div>
+
+      <!-- Display for Generated Image -->
+      <div id="imageSection" class="hidden">
+        <div>
+          <p class="form-question">What do you think of this image?</p>
+          <p>If you'd like to keep or share this image, you can save it to your device or print it out for later use.
+          </p>
+          <p class="smalltext"> Tip: Long press the image to Save or Share... and print with Instax Link WIDE app. </p>
+          <div class="buttons-icons">
+            <label class="save-button" id="saveButton">
+              <i class="fa-solid fa-download"></i> Save
+            </label>
+            <label class="print-button" id="printButton">
+              <i class="fa-solid fa-print"></i> Print
+            </label>
+          </div>
+          <img id="generatedImage" style="width: 100vw; align: center" alt="Generated image" />
+        </div>
+
+        <div class="buttons">
+          <button class="new-image-button" id="newImageButton">Start over</button>
+          <button class="retry-button" id="retryButton">Re-generate</button>
+          <a href="/how-to-use" class="info-button">How to use?</a>
+        </div>
+
+        <div data-tf-live="01JJBR431WT7NTQ8J71AZPHXTT"></div>
+        <script src="//embed.typeform.com/next/embed.js"></script>
+
+      </div>
+
     </div>
-    <script src="/script.js"></script>
-  </body>
+  </div>
+  <script src="/script.js"></script>
+</body>
+
 </html>

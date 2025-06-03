@@ -53,7 +53,7 @@ const fetch = require("node-fetch");
 async function logToAirtable({ generationId, username, uploadedImageUrl, freeText, ocrText, generatedImageUrl, input, prompt, engine, ipAddress, userAgentInfo }) {
   console.log("=========logging to airtable");
   try {
-    
+
     // Log metadata to Airtable
     const response = await fetch("https://api.airtable.com/v0/appudv8E66pNtEcgz/Generated%20Images", {
       method: "POST",
@@ -62,12 +62,12 @@ async function logToAirtable({ generationId, username, uploadedImageUrl, freeTex
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-         fields: {
+        fields: {
           'Generation ID': generationId,
-          'Username' : username,
+          'Username': username,
           'Uploaded Image': uploadedImageUrl, // Store as a URL
-          'Free Text' : freeText,
-          'OCR Text' : ocrText,
+          'Free Text': freeText,
+          'OCR Text': ocrText,
           'Generated Image': generatedImageUrl, // Store as a URL
           'Input': input,
           'Prompt': prompt,
@@ -105,6 +105,11 @@ fastify.register(require("@fastify/multipart"), {
 fastify.register(require("@fastify/static"), {
   root: path.join(__dirname, "public"),
   prefix: "/",
+  setHeaders: (res, path, stat) => {
+    if (path.endsWith('.svg')) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+    }
+  }
 });
 
 // Templating engine
@@ -138,7 +143,7 @@ async function handleOCR(fileBuffer, freeText, filename) {
       prompt,
     };
   }
-  
+
   const filePath = path.join(__dirname, "uploads", filename);
 
   // Save the uploaded image temporarily
