@@ -1,5 +1,5 @@
 # Use an official Node.js runtime as a parent image
-FROM node:18-alpine
+FROM node:14-alpine
 
 # Set the working directory in the container
 WORKDIR /app
@@ -14,7 +14,13 @@ RUN npm install
 # Copy the rest of the application code to the working directory
 COPY . .
 
-RUN chmod +x server.js
+# Create necessary directories
+RUN mkdir -p uploads public/generated
+
+# Set proper permissions
+RUN chmod +x server.js && \
+    chmod 755 uploads && \
+    chmod 755 public/generated
 
 # Expose the port your application listens on
 EXPOSE 3000

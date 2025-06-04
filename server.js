@@ -9,17 +9,33 @@ const filterPromptData = require("./src/prompts/filter");
 const createPrompt = require("./src/prompts/createPrompt");
 const createTextPrompt = require("./src/prompts/createTextPrompt");
 const processPromptAndGenerateImage = require("./src/sdxl");
-const { generateGuidingQuestions } = require('./src/gemini');
+const { generateGuidingQuestions, initializeClientsPromise } = require('./src/gemini');
 
-let userAgentInfo;
+// Parse Google Cloud credentials from environment variable
+let credentials;
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+  try {
+    credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+    console.log('server.js: Successfully parsed Google Cloud credentials from environment variable');
+  } catch (error) {
+    console.error('server.js ERROR: Error parsing Google Cloud credentials:', error);
+    // It's crucial to throw or handle this error as the app cannot proceed without credentials
+    throw new Error('Invalid Google Cloud credentials JSON in environment variable for server.js.');
+  }
+} else {
+  console.warn('server.js WARNING: GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not set for Vision/Storage clients.');
+}
 
 // Set up Google Cloud Vision client
-const client = new vision.ImageAnnotatorClient();
+const client = new vision.ImageAnnotatorClient({
+  projectId: process.env.GCP_PROJECT_ID,
+  credentials: credentials
+});
 
-// Initialize Google Cloud Storage client with default credentials
+// Initialize Google Cloud Storage client
 const storage = new Storage({
   projectId: process.env.GCP_PROJECT_ID,
-  credentials: undefined // This will make it use the default credentials
+  credentials: credentials
 });
 const bucketName = process.env.GCS_BUCKET_NAME;
 
@@ -246,7 +262,15 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
 
     // Generate guiding questions using Gemini
     try {
-      guidingQuestions = await generateGuidingQuestions(prompt, uploadedImageUrl);
+      console.log("Generating guiding questions...");
+      // Combine all relevant content
+      const contentForQuestions = [
+        filteredPromptData?.freeText || '',
+        ...(Array.isArray(filteredPromptData?.matchedPhrases) ? filteredPromptData.matchedPhrases : [])
+      ].filter(Boolean).join(", ");
+      console.log("Content for questions:", contentForQuestions);
+
+      guidingQuestions = await generateGuidingQuestions(contentForQuestions, uploadedImageUrl);
       console.log("Generated guiding questions:", guidingQuestions);
     } catch (error) {
       console.error("Error generating guiding questions:", error);
@@ -336,12 +360,27 @@ fastify.get("/api/image-status/:generationId", async (req, reply) => {
   });
 });
 
+// Wrap the server start logic in an async function to await client initialization
+async function startServer() {
+  try {
+    console.log("server.js: Waiting for Google Cloud clients (including Gemini) to initialize...");
+    // AWAIT the initialization promise from gemini.js
+    await initializeClientsPromise;
+    console.log("server.js: All Google Cloud clients initialized successfully. Starting server.");
 
-// Start the server
-fastify.listen({ port: process.env.PORT || 3000, host: "0.0.0.0" }, function (err, address) {
-  if (err) {
-    console.error(err);
-    process.exit(1);
+    // Start the server only after clients are ready
+    fastify.listen({ port: process.env.PORT || 3000, host: "0.0.0.0" }, function (err, address) {
+      if (err) {
+        console.error(err);
+        process.exit(1);
+      }
+      console.log(`Server listening at ${address}`);
+    });
+  } catch (error) {
+    console.error("server.js CRITICAL ERROR: Failed to start server due to Google Cloud client initialization error:", error);
+    process.exit(1); // Exit if critical services can't start
   }
-  console.log(`Server listening at ${address}`);
-});
+}
+
+// Call the async function to start your server
+startServer();
