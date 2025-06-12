@@ -42,13 +42,10 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
         ],
     });
 }
+
 // Initialize Vertex with your Cloud project and location
-const ai = new GoogleGenAI({
-    vertexai: true,
-    project: process.env.GCP_PROJECT_ID,
-    location: 'global',
-    auth: googleAuthClient
-});
+const genAI = new GoogleGenAI(process.env.GOOGLE_API_KEY);
+
 const model = 'gemini-2.5-flash-preview-05-20';
 
 // Set up generation config
@@ -77,7 +74,7 @@ const generationConfig = {
     ],
 };
 
-async function generateGuidingQuestions(prompt, imageUrl) {
+async function generateGuidingQuestions(prompt) {
     try {
         const req = {
             model: model,
@@ -102,7 +99,7 @@ async function generateGuidingQuestions(prompt, imageUrl) {
             config: generationConfig,
         };
 
-        const response = await ai.models.generateContent(req);
+        const response = await genAI.models.generateContent(req);
         const fullResponse = response.text;
 
         // Format the questions into a clean list
