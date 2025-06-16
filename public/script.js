@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const cameraButton = document.getElementById("cameraButton");
   const inputSection = document.getElementById("inputSection");
   const loadingPage = document.getElementById("loadingPage");
+  const loadingSpinner = document.getElementById("loadingSpinner");
   const imageSection = document.getElementById("imageSection");
   const ocrResult = document.getElementById("ocrResult");
   const generatedImage = document.getElementById("generatedImage");
@@ -82,6 +83,9 @@ document.addEventListener("DOMContentLoaded", function () {
     // Hide input section and show loading page
     inputSection.classList.add("hidden");
     loadingPage.classList.remove("hidden");
+    if (loadingSpinner) { // ADD THIS LINE
+      loadingSpinner.style.display = "block"; // ADD THIS LINE
+    } // ADD THIS LINE
 
     const formData = new FormData();
     if (file) formData.append("image", file);
@@ -201,6 +205,9 @@ document.addEventListener("DOMContentLoaded", function () {
         .then((response) => response.json())
         .then((data) => {
           if (data.status === "completed") {
+            if (loadingSpinner) {
+              loadingSpinner.style.display = "none";
+            }
             clearInterval(interval);
             loadingPage.classList.add("hidden");
             imageSection.classList.remove("hidden");
@@ -221,6 +228,9 @@ document.addEventListener("DOMContentLoaded", function () {
               guidingQuestions.style.display = "none";
             }
           } else if (data.status === "failed") {
+            if (loadingSpinner) {
+              loadingSpinner.style.display = "none";
+            }
             clearInterval(interval);
             loadingPage.classList.add("hidden");
             inputSection.classList.remove("hidden");
@@ -229,6 +239,9 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .catch((error) => {
           console.error("Error polling for image status:", error);
+          if (loadingSpinner) {
+            loadingSpinner.style.display = "none";
+          }
           clearInterval(interval);
           loadingPage.classList.add("hidden");
           inputSection.classList.remove("hidden");

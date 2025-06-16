@@ -70,7 +70,7 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN }
 // Logging function for Airtable
 const fetch = require("node-fetch");
 
-async function logToAirtable({ generationId, username, uploadedImageUrl, freeText, ocrText, generatedImageUrl, input, prompt, engine, ipAddress, userAgentInfo }) {
+async function logToAirtable({ generationId, username, uploadedImageUrl, freeText, ocrText, generatedImageUrl, input, prompt, engine, ipAddress, userAgentInfo, guidingQuestions, triedEngines }) {
   console.log("=========logging to airtable");
   try {
 
@@ -95,6 +95,7 @@ async function logToAirtable({ generationId, username, uploadedImageUrl, freeTex
           'IP Address': ipAddress,
           'Timestamp': new Date().toISOString(),
           'User Agent Info': userAgentInfo,
+          'Guiding Questions': JSON.stringify(guidingQuestions, null, 2),
         },
       }),
     });
@@ -277,21 +278,31 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
       guidingQuestions = []; // Set empty array if generation fails
     }
 
+    triedEngines = [];
+
     // Generate the image
-    processPromptAndGenerateImage(prompt, engine)
+    processPromptAndGenerateImage(prompt, engine, triedEngines)
       .then(async (imageResponse) => {
         if (imageResponse && imageResponse.image_url) {
           let generatedImageUrl;
-          if (engine === "sdxl") {
-            const generatedImageBuffer = Buffer.from(imageResponse.image_url.split(",")[1], "base64");
-            generatedImageUrl = await uploadToGCS(generatedImageBuffer, `generated/${generationId}.png`);
-          } else {
+          // --- MODIFIED SECTION START ---
+          // Check if the image_url is a data: URL (e.g., from Imagen) or a standard HTTP/HTTPS URL (e.g., from Flux1/Replicate)
+          if (imageResponse.image_url.startsWith("data:")) {
+            // If it's a data: URL, convert it to a Buffer and upload
+            const base64Data = imageResponse.image_url.split(",")[1];
+            if (base64Data) {
+              const generatedImageBuffer = Buffer.from(base64Data, "base64");
+              generatedImageUrl = await uploadToGCS(generatedImageBuffer, `generated/${engine}_${generationId}.png`); // Use engine name in path
+            } else {
+              throw new Error("Invalid data: URL format received from image generation.");
+            }
+          } else { // Assume it's a regular HTTP/HTTPS URL (from Replicate or Stability.ai)
             const response = await fetch(imageResponse.image_url);
             if (!response.ok) {
               throw new Error(`Failed to fetch image from URL: ${imageResponse.image_url}`);
             }
             const generatedImageBuffer = await response.buffer();
-            generatedImageUrl = await uploadToGCS(generatedImageBuffer, `generated/replicate_${generationId}.jpg`);
+            generatedImageUrl = await uploadToGCS(generatedImageBuffer, `generated/${engine}_${generationId}.jpg`); // Use engine name in path
           }
 
           await logToAirtable({
@@ -306,6 +317,7 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
             engine,
             ipAddress: req.headers["x-forwarded-for"] || req.ip,
             userAgentInfo,
+            guidingQuestions
           });
 
           imageStatusMap.set(generationId, {

@@ -1,47 +1,10 @@
 const { GoogleGenAI } = require('@google/genai');
-const { GoogleAuth } = require('google-auth-library');
 const fetch = require('node-fetch');
 
 // Make fetch and Headers available globally
 global.fetch = fetch;
 global.Headers = fetch.Headers;
 
-let googleAuthCredentials; // This will hold the parsed JSON credentials
-let googleAuthClient;     // This will hold the initialized GoogleAuth client
-
-// --- Centralized Credential Parsing ---
-if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-    try {
-        googleAuthCredentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-        console.log('Successfully parsed Google Cloud credentials from environment variable GOOGLE_APPLICATION_CREDENTIALS_JSON');
-
-        // Initialize GoogleAuth client with the parsed credentials
-        // Define scopes as needed for Vision AI, Generative AI, etc.
-        googleAuthClient = new GoogleAuth({
-            credentials: googleAuthCredentials,
-            scopes: [
-                'https://www.googleapis.com/auth/cloud-platform', // General Google Cloud access
-                // Add more specific scopes if necessary, e.g.,
-                // 'https://www.googleapis.com/auth/cloud-vision',
-                // 'https://www.googleapis.com/auth/generative-language'
-            ],
-        });
-        console.log('GoogleAuth client initialized with explicit credentials.');
-
-    } catch (error) {
-        console.error('Error parsing Google Cloud credentials from GOOGLE_APPLICATION_CREDENTIALS_JSON:', error);
-        // It's crucial to throw or handle this error, as the app cannot proceed without credentials
-        throw new Error('Invalid Google Cloud credentials JSON in environment variable.');
-    }
-} else {
-    console.warn('GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not set. Attempting default ADC via instance role.');
-    // If not set, GoogleAuth will fall back to App Runner's instance role credentials (if configured)
-    googleAuthClient = new GoogleAuth({
-        scopes: [
-            'https://www.googleapis.com/auth/cloud-platform',
-        ],
-    });
-}
 
 // Initialize Vertex with your Cloud project and location
 const genAI = new GoogleGenAI(process.env.GOOGLE_API_KEY);
