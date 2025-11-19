@@ -9,7 +9,7 @@ global.Headers = fetch.Headers;
 // Initialize Vertex with your Cloud project and location
 const genAI = new GoogleGenAI(process.env.GOOGLE_API_KEY);
 
-const model = 'gemini-2.5-flash-preview-05-20';
+const model = 'gemini-2.5-flash';
 
 // Set up generation config
 const generationConfig = {
