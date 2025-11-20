@@ -10,6 +10,8 @@ const createPrompt = require("./src/prompts/createPrompt");
 const createTextPrompt = require("./src/prompts/createTextPrompt");
 const processPromptAndGenerateImage = require("./src/sdxl");
 const { generateGuidingQuestions, initializeClientsPromise } = require('./src/gemini');
+//require("dotenv").config();
+
 
 // Parse Google Cloud credentials from environment variable
 let credentials;
@@ -58,11 +60,13 @@ async function uploadToGCS(fileBuffer, destinationPath) {
     return publicUrl;
   } catch (error) {
     console.error('Error uploading to GCS or making file public:', error);
-    throw error;
+    throw error; 
+    //return null; // Return null on failure to avoid crashing the app
   }
 }
 
 const Airtable = require("airtable");
+console.log("DEBUG AIRTABLE_PAT set:", !!process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN);
 
 // Set up Airtable configuration
 const base = new Airtable({ apiKey: process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN }).base("appudv8E66pNtEcgz");
@@ -70,7 +74,7 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN }
 // Logging function for Airtable
 const fetch = require("node-fetch");
 
-async function logToAirtable({ generationId, username, uploadedImageUrl, freeText, ocrText, generatedImageUrl, input, prompt, engine, ipAddress, userAgentInfo, guidingQuestions, triedEngines }) {
+async function logToAirtable({ generationId, username, uploadedImageUrl, freeText, ocrText, generatedImageUrl, input, prompt, engine, ipAddress, userAgentInfo, guidingQuestions, triedEngines, durationMs }) {
   console.log("=========logging to airtable");
   try {
 
@@ -96,6 +100,7 @@ async function logToAirtable({ generationId, username, uploadedImageUrl, freeTex
           'Timestamp': new Date().toISOString(),
           'User Agent Info': userAgentInfo,
           'Guiding Questions': JSON.stringify(guidingQuestions, null, 2),
+          'Generation Duration (ms)': durationMs !== undefined ? Number(durationMs) : null,
         },
       }),
     });
@@ -216,9 +221,10 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
 
     const parts = await req.parts();
 
-    let fileBuffer = null;
-    let freeText = "";
-    let username = "Guest";
+  let fileBuffer = null;
+  let freeText = "";
+  let username = "Guest";
+  let generationStart = null;
 
     for await (const part of parts) {
       if (part.file) {
@@ -227,6 +233,8 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
         freeText = part.value || "";
       } else if (part.fieldname === "username") {
         username = part.value || "Guest";
+      } else if (part.fieldname === "generationStart") {
+        generationStart = part.value ? parseInt(part.value, 10) : null;
       }
     }
 
@@ -285,6 +293,11 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
       .then(async (imageResponse) => {
         if (imageResponse && imageResponse.image_url) {
           let generatedImageUrl;
+          // Calculate duration
+          let durationMs = null;
+          if (generationStart) {
+            durationMs = Date.now() - generationStart;
+          }
           // --- MODIFIED SECTION START ---
           // Check if the image_url is a data: URL (e.g., from Imagen) or a standard HTTP/HTTPS URL (e.g., from Flux1/Replicate)
           if (imageResponse.image_url.startsWith("data:")) {
@@ -317,7 +330,8 @@ fastify.post("/api/generate-image/:engine", async (req, reply) => {
             engine,
             ipAddress: req.headers["x-forwarded-for"] || req.ip,
             userAgentInfo,
-            guidingQuestions
+            guidingQuestions,
+            durationMs
           });
 
           imageStatusMap.set(generationId, {

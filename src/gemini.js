@@ -1,13 +1,18 @@
-const { GoogleGenAI } = require('@google/genai');
 const fetch = require('node-fetch');
+//require("dotenv").config();
+
+console.log("DEBUG GEMINI_API_KEY present in gemini.js:", !!process.env.GEMINI_API_KEY);
 
 // Make fetch and Headers available globally
 global.fetch = fetch;
 global.Headers = fetch.Headers;
 
+const { GoogleGenAI } = require("@google/genai");
 
-// Initialize Vertex with your Cloud project and location
-const genAI = new GoogleGenAI(process.env.GOOGLE_API_KEY);
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+  vertexai: false,      // use Gemini API by key, not Vertex
+});
 
 const model = 'gemini-2.5-flash';
 

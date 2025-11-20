@@ -114,7 +114,7 @@ async function processPromptAndGenerateImage(prompt, engine, triedEngines = []) 
     }
 
     const data = await response.json();
-    console.log(`sdxl.js: Raw data received from ${engine} API:`, JSON.stringify(data, null, 2)); // <-- Keep this log
+    //console.log(`sdxl.js: Raw data received from ${engine} API:`, JSON.stringify(data, null, 2)); // <-- Keep this log
     return extractImageUrl(data, engine);
 
   } catch (error) {
@@ -225,7 +225,7 @@ function configureEngine(engine, prompt) {
 
 // Helper to extract image URL based on response structure
 function extractImageUrl(data, engine) {
-  console.log(`sdxl.js: extractImageUrl received data for ${engine}:`, JSON.stringify(data, null, 2));
+  //console.log(`sdxl.js: extractImageUrl received data for ${engine}:`, JSON.stringify(data, null, 2));
 
   if (engine === "sdxl" && data.artifacts && data.artifacts.length > 0) {
     return { image_url: `data:image/png;base64,${data.artifacts[0].base64}` };

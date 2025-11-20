@@ -87,11 +87,13 @@ document.addEventListener("DOMContentLoaded", function () {
       loadingSpinner.style.display = "block"; // ADD THIS LINE
     } // ADD THIS LINE
 
-    const formData = new FormData();
-    if (file) formData.append("image", file);
-    formData.append("engine", selectedEngine);
-    formData.append("freeText", freeTextInput);
-    formData.append("username", username);
+  const formData = new FormData();
+  if (file) formData.append("image", file);
+  formData.append("engine", selectedEngine);
+  formData.append("freeText", freeTextInput);
+  formData.append("username", username);
+  // Add generation start timestamp
+  formData.append("generationStart", Date.now().toString());
 
     // Save last input data for retry functionality
     lastInputData = { engine: selectedEngine, freeText: freeTextInput, file };
@@ -139,7 +141,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (lastInputData.file) formData.append("image", lastInputData.file);
     formData.append("engine", lastInputData.engine);
     formData.append("freeText", lastInputData.freeText);
-    formData.append("username", username);
+  formData.append("username", username);
+  // Add generation start timestamp for retry so duration is tracked
+  formData.append("generationStart", Date.now().toString());
 
     fetch(`/api/generate-image/${lastInputData.engine}`, {
       method: "POST",
